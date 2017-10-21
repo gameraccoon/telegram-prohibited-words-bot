@@ -26,6 +26,8 @@ func addWordCommand(data *processing.ProcessData) {
 		}
 	}
 
+	data.CachedWords = []string{}
+
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("success_message"))
 }
 
@@ -35,6 +37,8 @@ func removeWordCommand(data *processing.ProcessData) {
 	for _, word := range words {
 		data.Static.Db.RemoveProhibitedWord(strings.Trim(word, " \t\n"))
 	}
+
+	data.CachedWords = []string{}
 
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("success_message"))
 }
@@ -123,7 +127,7 @@ func calcWordsCount(text string, words []string) (count int) {
 	textWords := strings.Fields(processingText)
 
 	for _, word := range words {
-		upperWord := strings.ToUpper(word)
+		upperWord := word
 		for _, textWord := range textWords {
 			if upperWord == textWord {
 				count++
@@ -134,9 +138,21 @@ func calcWordsCount(text string, words []string) (count int) {
 	return
 }
 
+func getProhibitedWords(data *processing.ProcessData) []string {
+	if len(data.CachedWords) <= 0 {
+		words := data.Static.Db.GetProhibitedWords()
+
+		for _, word := range words {
+			data.CachedWords = append(data.CachedWords, strings.ToUpper(word))
+		}
+	}
+
+	return data.CachedWords
+}
+
 func processPlainMessage(data *processing.ProcessData) {
 	// ToDo: cache uppercase words
-	words := data.Static.Db.GetProhibitedWords()
+	words := getProhibitedWords(data)
 
 	upperText := strings.ToUpper(data.Message)
 

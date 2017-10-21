@@ -11,25 +11,25 @@ func TestWordsCountCalculation(t *testing.T) {
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{"asd"}
+		words := []string{strings.ToUpper("asd")}
 		assert.Equal(0, calcWordsCount(strings.ToUpper(testText), words))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{"test"}
+		words := []string{strings.ToUpper("test")}
 		assert.Equal(1, calcWordsCount(strings.ToUpper(testText), words))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{"Test"}
+		words := []string{strings.ToUpper("Test")}
 		assert.Equal(1, calcWordsCount(strings.ToUpper(testText), words))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{"Test", "Testing"}
+		words := []string{strings.ToUpper("Test"), strings.ToUpper("Testing")}
 		assert.Equal(2, calcWordsCount(strings.ToUpper(testText), words))
 	}
 }
