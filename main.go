@@ -78,7 +78,7 @@ func main() {
 
 	log.Printf("Authorized on account %s", chat.GetBotUsername())
 
-	chat.SetDebugModeEnabled(true)
+	chat.SetDebugModeEnabled(false)
 
 	staticData := &processing.StaticProccessStructs{
 		Chat:  chat,

@@ -39,12 +39,12 @@ func removeWordCommand(data *processing.ProcessData) {
 func listOfWordsCommand(data *processing.ProcessData) {
 	var buffer bytes.Buffer
 
-	buffer.WriteString(data.Static.Trans("words_list_header"))
+	buffer.WriteString(data.Static.Trans("words_list_header") + "\n")
 
 	words := data.Static.Db.GetProhibitedWords()
 
 	for _, word := range words {
-		buffer.WriteString(fmt.Sprintf(" %s", word))
+		buffer.WriteString(fmt.Sprintf("%s ", word))
 	}
 
 	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
