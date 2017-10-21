@@ -41,6 +41,20 @@ func listOfWordsCommand(data *processing.ProcessData) {
 
 	buffer.WriteString(data.Static.Trans("words_list_header"))
 
+	words := data.Static.Db.GetProhibitedWords()
+
+	for _, word := range words {
+		buffer.WriteString(fmt.Sprintf(" %s", word))
+	}
+
+	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
+}
+
+func playerScoresCommand(data *processing.ProcessData) {
+	var buffer bytes.Buffer
+
+	buffer.WriteString(data.Static.Trans("users_list_header"))
+
 	_, names, scores := data.Static.Db.GetUsersList()
 
 	for idx, name := range names {
@@ -51,15 +65,12 @@ func listOfWordsCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
 }
 
-func playerScoresCommand(data *processing.ProcessData) {
-}
-
 func makeUserCommandProcessors() ProcessorFuncMap {
 	return map[string]ProcessorFunc{
-		"add_word":      addWordCommand,
-		"remove_word":   removeWordCommand,
-		"list_of_words": listOfWordsCommand,
-		"scores":        playerScoresCommand,
+		"add_word":    addWordCommand,
+		"remove_word": removeWordCommand,
+		"words":       listOfWordsCommand,
+		"scores":      playerScoresCommand,
 	}
 }
 
