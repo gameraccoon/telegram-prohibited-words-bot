@@ -206,7 +206,7 @@ func (database *Database) RemoveProhibitedWord(word string) {
 }
 
 func (database *Database) GetProhibitedWords() (words []string) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT word FROM prohibited_words"))
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT word FROM prohibited_words ORDER BY word ASC"))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
