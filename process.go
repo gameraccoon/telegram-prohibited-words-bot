@@ -70,7 +70,7 @@ func makeUserCommandProcessors() ProcessorFuncMap {
 		"add_word":    addWordCommand,
 		"remove_word": removeWordCommand,
 		"words":       listOfWordsCommand,
-		"scores":      playerScoresCommand,
+		"score":       playerScoresCommand,
 	}
 }
 
@@ -106,9 +106,26 @@ func getUserName(update *tgbotapi.Update) string {
 	}
 }
 
-func calcProhibitedWordsCount(text string, words []string) (count int) {
+func calcWordsCount(text string, words []string) (count int) {
+	removePunctuation := func(r rune) rune {
+		if strings.ContainsRune(".,:;\"'!@#$%^&*()_+=/\\<>[]{}~", r) {
+			return -1
+		} else {
+			return r
+		}
+	}
+
+	processingText := text
+	processingText = strings.Map(removePunctuation, processingText)
+	textWords := strings.Fields(processingText)
+
 	for _, word := range words {
-		count += strings.Count(text, strings.ToUpper(word))
+		upperWord := strings.ToUpper(word)
+		for _, textWord := range textWords {
+			if upperWord == textWord {
+				count++
+			}
+		}
 	}
 
 	return
@@ -120,7 +137,7 @@ func processPlainMessage(data *processing.ProcessData) {
 
 	upperText := strings.ToUpper(data.Message)
 
-	fines := calcProhibitedWordsCount(upperText, words)
+	fines := calcWordsCount(upperText, words)
 
 	if fines > 0 {
 		userId := data.Static.Db.GetUserId(data.ChatId, data.UserName)
