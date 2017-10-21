@@ -177,7 +177,7 @@ func TestScoringUsers(t *testing.T) {
 
 	ids, names, score := db.GetUsersList()
 
-	for idx, id := range(ids) {
+	for idx, id := range ids {
 		if id == userId1 {
 			assert.Equal(1, score[idx])
 			assert.Equal("testName1", names[idx])

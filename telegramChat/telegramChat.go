@@ -26,6 +26,10 @@ func (telegramChat *TelegramChat) GetBot() *tgbotapi.BotAPI {
 	return telegramChat.bot
 }
 
+func (telegramChat *TelegramChat) GetBotUsername() string {
+	return telegramChat.bot.Self.UserName
+}
+
 func (telegramChat *TelegramChat) SetDebugModeEnabled(isEnabled bool) {
 	telegramChat.bot.Debug = isEnabled
 }

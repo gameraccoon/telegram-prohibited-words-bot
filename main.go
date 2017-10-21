@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/gameraccoon/telegram-poll-bot/database"
-	"github.com/gameraccoon/telegram-poll-bot/processing"
-	"github.com/gameraccoon/telegram-poll-bot/telegramChat"
+	"github.com/gameraccoon/telegram-prohibited-words-bot/database"
+	"github.com/gameraccoon/telegram-prohibited-words-bot/processing"
+	"github.com/gameraccoon/telegram-prohibited-words-bot/telegramChat"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/nicksnyder/go-i18n/i18n"
 	"io/ioutil"

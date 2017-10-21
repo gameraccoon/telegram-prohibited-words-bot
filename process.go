@@ -1,8 +1,9 @@
 package main
 
 import (
-	//"github.com/gameraccoon/telegram-poll-bot/database"
-	"github.com/gameraccoon/telegram-poll-bot/processing"
+	"bytes"
+	"fmt"
+	"github.com/gameraccoon/telegram-prohibited-words-bot/processing"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"strings"
 )
@@ -15,84 +16,50 @@ type Processors struct {
 	Main ProcessorFuncMap
 }
 
-/*
-func sendResults(staticData *processing.StaticProccessStructs, questionId int64, chatIds []int64) {
-	variants := staticData.Db.GetQuestionVariants(questionId)
-	answers := staticData.Db.GetQuestionAnswers(questionId)
-	answersCount := staticData.Db.GetQuestionAnswersCount(questionId)
+func addWordCommand(data *processing.ProcessData) {
+	words := strings.Split(data.Message, ",")
 
+	for _, word := range words {
+		data.Static.Db.AddProhibitedWord(strings.Trim(word, " \t\n"))
+	}
+
+	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("success_message"))
+}
+
+func removeWordCommand(data *processing.ProcessData) {
+	words := strings.Split(data.Message, ",")
+
+	for _, word := range words {
+		data.Static.Db.RemoveProhibitedWord(strings.Trim(word, " \t\n"))
+	}
+
+	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("success_message"))
+}
+
+func listOfWordsCommand(data *processing.ProcessData) {
 	var buffer bytes.Buffer
-	buffer.WriteString(staticData.Trans("results_header"))
-	buffer.WriteString(fmt.Sprintf("<i>%s</i>", staticData.Db.GetQuestionText(questionId)))
 
-	for i, variant := range variants {
-		buffer.WriteString(fmt.Sprintf("\n%s - %d (%d%%)", variant, answers[i], int64(100.0*float32(answers[i])/float32(answersCount))))
-	}
-	resultText := buffer.String()
+	buffer.WriteString(data.Static.Trans("words_list_header"))
 
-	for _, chatId := range chatIds {
-		staticData.Chat.SendMessage(chatId, resultText)
+	_, names, scores := data.Static.Db.GetUsersList()
+
+	for idx, name := range names {
+		score := scores[idx]
+		buffer.WriteString(fmt.Sprintf("\n%s - %d", name, score))
 	}
+
+	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
 }
 
-func addQuestionCommand(data *processing.ProcessData) {
-	if data.Static.Db.IsUserBanned(data.UserId) {
-		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("warn_youre_banned"))
-		return
-	}
-	if !data.Static.Db.IsUserEditingQuestion(data.UserId) {
-		data.Static.Db.StartCreatingQuestion(data.UserId)
-		data.Static.Db.UnmarkUserReady(data.UserId)
-		data.Static.UserStates[data.ChatId] = processing.WaitingText
-		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("ask_question_text"))
-	} else {
-		sendEditingGuide(data, dialogManager)
-	}
+func playerScoresCommand(data *processing.ProcessData) {
 }
-
-func startCommand(data *processing.ProcessData) {
-	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("hello_message"))
-	if !data.Static.Db.IsUserHasPendingQuestions(data.UserId) {
-		data.Static.Db.InitNewUserQuestions(data.UserId)
-		data.Static.Db.UnmarkUserReady(data.UserId)
-		processing.ProcessNextQuestion(data)
-	}
-}
-
-func lastResultsCommand(data *processing.ProcessData) {
-	questions := data.Static.Db.GetLastFinishedQuestions(10)
-	for _, questionId := range questions {
-		sendResults(data.Static, questionId, []int64{data.ChatId})
-	}
-}
-
-func myQuestionsCommand(data *processing.ProcessData) {
-	questionsIds := data.Static.Db.GetUserLastQuestions(data.UserId, 10)
-	finishedQuestionsIds := data.Static.Db.GetUserLastFinishedQuestions(data.UserId, 10)
-
-	finishedQuestionsMap := make(map[int64]bool)
-	for _, questionId := range finishedQuestionsIds {
-		finishedQuestionsMap[questionId] = true
-	}
-
-	for _, questionId := range questionsIds {
-		if _, ok := finishedQuestionsMap[questionId]; ok {
-			sendResults(data.Static, questionId, []int64{data.ChatId})
-		} else {
-			data.Static.Chat.SendMessage(data.ChatId, fmt.Sprintf("<i>%s</i>\n%s",
-				data.Static.Db.GetQuestionText(questionId),
-				getDificientDataForQuestionText(data.Static, questionId),
-			))
-		}
-	}
-}*/
 
 func makeUserCommandProcessors() ProcessorFuncMap {
 	return map[string]ProcessorFunc{
-	//"add_word": addWordCommand,
-	//"remove_word": removeWordCommand,
-	//"list_of_words": listOfWordsCommand,
-	//"scores": playerScoresCommand,
+		"add_word":      addWordCommand,
+		"remove_word":   removeWordCommand,
+		"list_of_words": listOfWordsCommand,
+		"scores":        playerScoresCommand,
 	}
 }
 
@@ -123,7 +90,6 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 	data := processing.ProcessData{
 		Static: staticData,
 		ChatId: update.Message.Chat.ID,
-		UserId: staticData.Db.GetUserId(update.Message.Chat.ID),
 	}
 
 	message := update.Message.Text
