@@ -20,7 +20,10 @@ func addWordCommand(data *processing.ProcessData) {
 	words := strings.Split(data.Message, ",")
 
 	for _, word := range words {
-		data.Static.Db.AddProhibitedWord(strings.Trim(word, " \t\n"))
+		trimmedWord := strings.Trim(word, " \t\n")
+		if len(trimmedWord) > 1 {
+			data.Static.Db.AddProhibitedWord(trimmedWord)
+		}
 	}
 
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("success_message"))
@@ -44,7 +47,7 @@ func listOfWordsCommand(data *processing.ProcessData) {
 	words := data.Static.Db.GetProhibitedWords()
 
 	for _, word := range words {
-		buffer.WriteString(fmt.Sprintf("%s ", word))
+		buffer.WriteString(fmt.Sprintf("'%s' ", word))
 	}
 
 	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
