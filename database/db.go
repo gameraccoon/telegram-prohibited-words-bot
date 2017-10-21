@@ -271,6 +271,6 @@ func (database *Database) GetUserScore(userId int64) (score int) {
 	return
 }
 
-func (database *Database) AddUserScore(userId int64, addedScore int64) {
+func (database *Database) AddUserScore(userId int64, addedScore int) {
 	database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK users SET score=score+%d WHERE id=%d", addedScore, userId))
 }

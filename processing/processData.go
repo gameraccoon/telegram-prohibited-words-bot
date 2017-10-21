@@ -6,4 +6,5 @@ type ProcessData struct {
 	Message string // parameters of command or plain message
 	ChatId  int64
 	UserId  int64
+	UserName string
 }

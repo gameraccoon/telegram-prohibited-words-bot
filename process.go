@@ -93,8 +93,46 @@ func processCommand(data *processing.ProcessData, processors *Processors) {
 	data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("warn_unknown_command"))
 }
 
-func processPlainMessage(data *processing.ProcessData) {
+func getUserName(update *tgbotapi.Update) string {
+	user := update.Message.From
+	if user != nil {
+		if len(user.UserName) > 0 {
+			return "@" + user.UserName
+		} else {
+			return user.FirstName
+		}
+	} else {
+		return "unknown"
+	}
+}
 
+func calcProhibitedWordsCount(text string, words []string) (count int) {
+	for _, word := range words {
+		count += strings.Count(text, strings.ToUpper(word))
+	}
+
+	return
+}
+
+func processPlainMessage(data *processing.ProcessData) {
+	// ToDo: cache uppercase words
+	words := data.Static.Db.GetProhibitedWords()
+
+	upperText := strings.ToUpper(data.Message)
+
+	fines := calcProhibitedWordsCount(upperText, words)
+
+	if fines > 0 {
+		userId := data.Static.Db.GetUserId(data.ChatId, data.UserName)
+
+		data.Static.Db.AddUserScore(userId, fines)
+
+		data.Static.Chat.SendMessage(data.ChatId, fmt.Sprintf("%s: %d\n%s: %d",
+			data.Static.Trans("fine_message"),
+			fines,
+			data.Static.Trans("total_score_message"),
+			data.Static.Db.GetUserScore(userId)))
+	}
 }
 
 func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProccessStructs, processors *Processors) {
@@ -117,6 +155,7 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 		processCommand(&data, processors)
 	} else {
 		data.Message = message
+		data.UserName = getUserName(update)
 		processPlainMessage(&data)
 	}
 }
