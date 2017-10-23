@@ -104,7 +104,7 @@ func getUserName(update *tgbotapi.Update) string {
 	user := update.Message.From
 	if user != nil {
 		if len(user.UserName) > 0 {
-			return "@" + user.UserName
+			return user.UserName
 		} else {
 			return user.FirstName
 		}
