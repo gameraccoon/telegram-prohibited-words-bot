@@ -22,7 +22,7 @@ func addWordCommand(data *processing.ProcessData) {
 	for _, word := range words {
 		trimmedWord := strings.Trim(word, " \t\n")
 		if len(trimmedWord) > 1 {
-			data.Static.Db.AddProhibitedWord(trimmedWord)
+			data.Static.Db.AddProhibitedWord(data.ChatId, trimmedWord)
 		}
 	}
 
@@ -35,7 +35,7 @@ func removeWordCommand(data *processing.ProcessData) {
 	words := strings.Split(data.Message, ",")
 
 	for _, word := range words {
-		data.Static.Db.RemoveProhibitedWord(strings.Trim(word, " \t\n"))
+		data.Static.Db.RemoveProhibitedWord(data.ChatId, strings.Trim(word, " \t\n"))
 	}
 
 	data.CachedWords = []string{}
@@ -48,7 +48,7 @@ func listOfWordsCommand(data *processing.ProcessData) {
 
 	buffer.WriteString(data.Static.Trans("words_list_header") + "\n")
 
-	words := data.Static.Db.GetProhibitedWords()
+	words := data.Static.Db.GetProhibitedWords(data.ChatId)
 
 	for _, word := range words {
 		buffer.WriteString(fmt.Sprintf("'%s' ", word))
@@ -62,7 +62,7 @@ func playerScoresCommand(data *processing.ProcessData) {
 
 	buffer.WriteString(data.Static.Trans("users_list_header"))
 
-	_, names, scores := data.Static.Db.GetUsersList()
+	_, names, scores := data.Static.Db.GetUsersList(data.ChatId)
 
 	for idx, name := range names {
 		score := scores[idx]
@@ -140,7 +140,7 @@ func calcWordsCount(text string, words []string) (count int) {
 
 func getProhibitedWords(data *processing.ProcessData) []string {
 	if len(data.CachedWords) <= 0 {
-		words := data.Static.Db.GetProhibitedWords()
+		words := data.Static.Db.GetProhibitedWords(data.ChatId)
 
 		for _, word := range words {
 			data.CachedWords = append(data.CachedWords, strings.ToUpper(word))
@@ -159,15 +159,15 @@ func processPlainMessage(data *processing.ProcessData) {
 	fines := calcWordsCount(upperText, words)
 
 	if fines > 0 {
-		userId := data.Static.Db.GetUserId(data.ChatId, data.UserName)
+		data.Static.Db.UpdateUser(data.ChatId, data.UserId, data.UserName)
 
-		data.Static.Db.AddUserScore(userId, fines)
+		data.Static.Db.AddUserScore(data.ChatId, data.UserId, fines)
 
 		data.Static.Chat.SendMessage(data.ChatId, fmt.Sprintf("%s: %d\n%s: %d",
 			data.Static.Trans("fine_message"),
 			fines,
 			data.Static.Trans("total_score_message"),
-			data.Static.Db.GetUserScore(userId)))
+			data.Static.Db.GetUserScore(data.ChatId, data.UserId)))
 	}
 }
 
@@ -175,6 +175,7 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 	data := processing.ProcessData{
 		Static: staticData,
 		ChatId: update.Message.Chat.ID,
+		UserId: int64(update.Message.From.ID),
 	}
 
 	message := update.Message.Text

@@ -89,7 +89,7 @@ func TestDatabaseVersion(t *testing.T) {
 	}
 }
 
-func TestGetUserId(t *testing.T) {
+func TestUpdateUser(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
 	defer clearDb()
@@ -102,17 +102,44 @@ func TestGetUserId(t *testing.T) {
 	var chatId1 int64 = 321
 	var chatId2 int64 = 123
 
-	name := "testName"
+	var userId1 int64 = 1234
+	var userId2 int64 = 4321
 
-	id1 := db.GetUserId(chatId1, name)
-	id2 := db.GetUserId(chatId1, name)
-	id3 := db.GetUserId(chatId2, name)
+	db.UpdateUser(chatId1, userId1, "test1")
+	db.UpdateUser(chatId2, userId2, "test2")
 
-	assert.Equal(id1, id2)
-	assert.NotEqual(id1, id3)
+	db.UpdateUser(chatId1, userId2, "test3")
+	db.UpdateUser(chatId2, userId1, "test4")
 
-	assert.Equal(chatId1, db.GetUserChatId(id1))
-	assert.Equal(chatId2, db.GetUserChatId(id3))
+	db.UpdateUser(chatId2, userId1, "test5")
+
+	{
+		ids, names, scores := db.GetUsersList(chatId1)
+
+		for idx, id := range ids {
+			if id == userId1 {
+				assert.Equal("test5", names[idx])
+				assert.Equal(0, scores[idx])
+			} else if id == userId2 {
+				assert.Equal("test3", names[idx])
+				assert.Equal(0, scores[idx])
+			}
+		}
+	}
+
+	{
+		ids, names, scores := db.GetUsersList(chatId2)
+
+		for idx, id := range ids {
+			if id == userId1 {
+				assert.Equal("test5", names[idx])
+				assert.Equal(0, scores[idx])
+			} else if id == userId2 {
+				assert.Equal("test3", names[idx])
+				assert.Equal(0, scores[idx])
+			}
+		}
+	}
 }
 
 func TestSanitizeString(t *testing.T) {
@@ -141,13 +168,31 @@ func TestAddAndRemoveProhibitedWord(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	prohibitedWord := "testWord"
+	var chatId1 int64 = 321
+	var chatId2 int64 = 123
 
-	db.AddProhibitedWord(prohibitedWord)
-	db.AddProhibitedWord(prohibitedWord)
-	assert.Equal(prohibitedWord, db.GetProhibitedWords()[0])
-	db.RemoveProhibitedWord(prohibitedWord)
-	assert.Equal(0, len(db.GetProhibitedWords()))
+	prohibitedWord1 := "testWord1"
+	prohibitedWord2 := "testWord2"
+
+	{
+		db.AddProhibitedWord(chatId1, prohibitedWord1)
+		assert.Equal(1, len(db.GetProhibitedWords(chatId1)))
+		db.AddProhibitedWord(chatId1, prohibitedWord1)
+		assert.Equal(1, len(db.GetProhibitedWords(chatId1)))
+		assert.Equal(prohibitedWord1, db.GetProhibitedWords(chatId1)[0])
+		db.RemoveProhibitedWord(chatId1, prohibitedWord1)
+		assert.Equal(0, len(db.GetProhibitedWords(chatId1)))
+	}
+
+	{
+		db.AddProhibitedWord(chatId2, prohibitedWord2)
+		assert.Equal(1, len(db.GetProhibitedWords(chatId2)))
+		assert.Equal(prohibitedWord2, db.GetProhibitedWords(chatId2)[0])
+		db.AddProhibitedWord(chatId2, prohibitedWord1)
+		assert.Equal(2, len(db.GetProhibitedWords(chatId2)))
+		db.RemoveProhibitedWord(chatId2, prohibitedWord2)
+		assert.Equal(1, len(db.GetProhibitedWords(chatId2)))
+	}
 }
 
 func TestScoringUsers(t *testing.T) {
@@ -160,22 +205,24 @@ func TestScoringUsers(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	var chatId1 int64 = 123
-	var chatId2 int64 = 321
+	var chatId int64 = 123
 
-	userId1 := db.GetUserId(chatId1, "testName1")
-	userId2 := db.GetUserId(chatId2, "testName2")
+	var userId1 int64 = 1234
+	var userId2 int64 = 4321
 
-	assert.Equal(0, db.GetUserScore(userId1))
-	assert.Equal(0, db.GetUserScore(userId2))
+	db.UpdateUser(chatId, userId1, "testName1")
+	db.UpdateUser(chatId, userId2, "testName2")
 
-	db.AddUserScore(userId1, 1)
-	db.AddUserScore(userId2, 5)
+	assert.Equal(0, db.GetUserScore(chatId, userId1))
+	assert.Equal(0, db.GetUserScore(chatId, userId2))
 
-	assert.Equal(1, db.GetUserScore(userId1))
-	assert.Equal(5, db.GetUserScore(userId2))
+	db.AddUserScore(chatId, userId1, 1)
+	db.AddUserScore(chatId, userId2, 5)
 
-	ids, names, score := db.GetUsersList()
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(5, db.GetUserScore(chatId, userId2))
+
+	ids, names, score := db.GetUsersList(chatId)
 
 	for idx, id := range ids {
 		if id == userId1 {

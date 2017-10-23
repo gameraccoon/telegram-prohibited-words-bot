@@ -40,26 +40,31 @@ func (database *Database) Connect(fileName string) error {
 
 	database.conn = db
 
-	database.execQuery("PRAGMA foreign_keys = ON")
+	// database.execQuery("PRAGMA foreign_keys = ON")
 
 	database.execQuery("CREATE TABLE IF NOT EXISTS" +
-		" global_vars(name TEXT PRIMARY KEY" +
+		" global_vars(name TEXT NOT NULL PRIMARY KEY" +
 		",integer_value INTEGER" +
-		",string_value STRING);")
+		",string_value STRING" +
+		");")
 
+	// the same user in a different chat treats as a different user
 	database.execQuery("CREATE TABLE IF NOT EXISTS" +
-		" users(id INTEGER NOT NULL PRIMARY KEY" +
-		",chat_id INTEGER UNIQUE NOT NULL" +
+		" users(messenger_id INTEGER NOT NULL" +
+		",chat_id INTEGER NOT NULL" +
 		",score INTEGER NOT NULL" +
 		",name STRING NOT NULL" +
+		",PRIMARY KEY (messenger_id, chat_id)" +
 		")")
 
-	database.execQuery("CREATE UNIQUE INDEX IF NOT EXISTS" +
-		" chat_id_index ON users(chat_id)")
+	// database.execQuery("CREATE UNIQUE INDEX IF NOT EXISTS" +
+	// 	" chat_id_index ON users(chat_id)")
 
 	database.execQuery("CREATE TABLE IF NOT EXISTS" +
 		" prohibited_words(id INTEGER NOT NULL PRIMARY KEY" +
+		",chat_id INTEGER NOT NULL" +
 		",word STRING NOT NULL" +
+		",UNIQUE(chat_id, word)" +
 		")")
 
 	return nil
@@ -140,73 +145,25 @@ func (database *Database) SetDatabaseVersion(version string) {
 	database.execQuery(fmt.Sprintf("INSERT INTO global_vars (name, string_value) VALUES ('version', '%s')", sanitizeString(version)))
 }
 
-func (database *Database) GetUserId(chatId int64, name string) (userId int64) {
-	database.execQuery(fmt.Sprintf("INSERT OR IGNORE INTO users(chat_id, score, name) "+
-		"VALUES (%d, 0, '%s')", chatId, name))
-
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT id, name FROM users WHERE chat_id=%d", chatId))
-	if err != nil {
-		log.Fatal(err.Error())
-		return
-	}
-	defer rows.Close()
-
-	var oldName string
-
-	if rows.Next() {
-		err := rows.Scan(&userId, &oldName)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	} else {
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Fatal("No user found")
-	}
-
-	if name != oldName {
-		database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK users SET name='%s' WHERE id=%d", name, userId))
-	}
-
-	return
+func (database *Database) AddProhibitedWord(chatId int64,word string) {
+	database.execQuery(fmt.Sprintf("INSERT OR IGNORE INTO prohibited_words (chat_id, word) VALUES (%d, '%s')",
+		chatId,
+		sanitizeString(word),
+	))
 }
 
-func (database *Database) GetUserChatId(userId int64) (chatId int64) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT chat_id FROM users WHERE id=%d", userId))
-	if err != nil {
-		log.Fatal(err.Error())
-		return
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		err := rows.Scan(&chatId)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	} else {
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Fatal("No user found")
-	}
-
-	return
+func (database *Database) RemoveProhibitedWord(chatId int64, word string) {
+	database.execQuery(fmt.Sprintf("DELETE FROM prohibited_words WHERE chat_id=%d AND word='%s'",
+		chatId,
+		sanitizeString(word),
+	))
 }
 
-func (database *Database) AddProhibitedWord(word string) {
-	database.execQuery(fmt.Sprintf("INSERT INTO prohibited_words (word) VALUES ('%s')", sanitizeString(word)))
-}
+func (database *Database) GetProhibitedWords(chatId int64) (words []string) {
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT word FROM prohibited_words WHERE chat_id=%d ORDER BY word ASC",
+		chatId,
+	))
 
-func (database *Database) RemoveProhibitedWord(word string) {
-	database.execQuery(fmt.Sprintf("DELETE FROM prohibited_words WHERE word='%s'", sanitizeString(word)))
-}
-
-func (database *Database) GetProhibitedWords() (words []string) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT word FROM prohibited_words ORDER BY word ASC"))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -224,8 +181,10 @@ func (database *Database) GetProhibitedWords() (words []string) {
 	return
 }
 
-func (database *Database) GetUsersList() (ids []int64, names []string, scores []int) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT id, name, score FROM users"))
+func (database *Database) GetUsersList(chatId int64) (ids []int64, names []string, scores []int) {
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT messenger_id, name, score FROM users WHERE chat_id=%d",
+		chatId,
+	))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -248,8 +207,26 @@ func (database *Database) GetUsersList() (ids []int64, names []string, scores []
 	return
 }
 
-func (database *Database) GetUserScore(userId int64) (score int) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT score FROM users WHERE id=%d", userId))
+func (database *Database) UpdateUser(chatId int64, messengerUserId int64, name string) {
+	sanitizedName := sanitizeString(name)
+
+	database.execQuery(fmt.Sprintf(
+		"INSERT OR IGNORE INTO users(messenger_id, chat_id, name, score) VALUES (%d, %d, '%s', 0);" +
+		"UPDATE users SET name='%s' where messenger_id=%d",
+		messengerUserId,
+		chatId,
+		sanitizedName,
+		sanitizedName,
+		messengerUserId,
+	))
+}
+
+func (database *Database) GetUserScore(chatId int64, messengerUserId int64) (score int) {
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT score FROM users WHERE messenger_id=%d AND chat_id=%d",
+		messengerUserId,
+		chatId,
+	))
+
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -265,12 +242,16 @@ func (database *Database) GetUserScore(userId int64) (score int) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Fatal("No question found")
+		log.Fatal("No user found")
 	}
 
 	return
 }
 
-func (database *Database) AddUserScore(userId int64, addedScore int) {
-	database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK users SET score=score+%d WHERE id=%d", addedScore, userId))
+func (database *Database) AddUserScore(chatId int64, messengerUserId int64, addedScore int) {
+	database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK users SET score=score+%d WHERE messenger_id=%d AND chat_id=%d",
+		addedScore,
+		messengerUserId,
+		chatId,
+	))
 }
