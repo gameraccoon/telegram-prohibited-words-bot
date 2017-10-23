@@ -7,5 +7,4 @@ type ProcessData struct {
 	ChatId  int64
 	UserId int64
 	UserName string
-	CachedWords []string
 }

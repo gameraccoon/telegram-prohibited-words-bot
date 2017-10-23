@@ -25,4 +25,5 @@ type StaticProccessStructs struct {
 	Chat       chat.Chat
 	Db         *database.Database
 	Trans      i18n.TranslateFunc
+	CachedWords map[int64][]string
 }
