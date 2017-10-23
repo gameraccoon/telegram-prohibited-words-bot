@@ -81,9 +81,10 @@ func main() {
 	chat.SetDebugModeEnabled(false)
 
 	staticData := &processing.StaticProccessStructs{
-		Chat:  chat,
-		Db:    db,
-		Trans: trans,
+		Chat:        chat,
+		Db:          db,
+		Trans:       trans,
+		CachedWords: map[int64][]string{},
 	}
 
 	updateBot(chat.GetBot(), staticData)

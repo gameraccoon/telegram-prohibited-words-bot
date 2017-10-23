@@ -194,8 +194,10 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 
 		processCommand(&data, processors)
 	} else {
-		data.Message = message
-		data.UserName = getUserName(update)
-		processPlainMessage(&data)
+		if update.Message.ForwardFrom == nil {
+			data.Message = message
+			data.UserName = getUserName(update)
+			processPlainMessage(&data)
+		}
 	}
 }
