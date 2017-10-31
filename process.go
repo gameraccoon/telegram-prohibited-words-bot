@@ -186,10 +186,10 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 	if strings.HasPrefix(message, "/") {
 		commandLen := strings.Index(message, " ")
 		if commandLen != -1 {
-			data.Command = message[1:commandLen]
+			data.Command = strings.Split(message[1:commandLen], "@")[0]
 			data.Message = message[commandLen+1:]
 		} else {
-			data.Command = message[1:]
+			data.Command = strings.Split(message[1:], "@")[0]
 		}
 
 		processCommand(&data, processors)
