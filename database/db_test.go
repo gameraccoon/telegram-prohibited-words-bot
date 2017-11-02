@@ -224,13 +224,12 @@ func TestScoringUsers(t *testing.T) {
 
 	ids, names, score := db.GetUsersList(chatId)
 
-	for idx, id := range ids {
-		if id == userId1 {
-			assert.Equal(1, score[idx])
-			assert.Equal("testName1", names[idx])
-		} else if id == userId2 {
-			assert.Equal(5, score[idx])
-			assert.Equal("testName2", names[idx])
-		}
+	assert.Equal(2, len(ids))
+	if len(ids) > 1 {
+		// sorted by score DESC
+		assert.Equal(5, score[0])
+		assert.Equal("testName2", names[0])
+		assert.Equal(1, score[1])
+		assert.Equal("testName1", names[1])
 	}
 }

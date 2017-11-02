@@ -182,7 +182,7 @@ func (database *Database) GetProhibitedWords(chatId int64) (words []string) {
 }
 
 func (database *Database) GetUsersList(chatId int64) (ids []int64, names []string, scores []int) {
-	rows, err := database.conn.Query(fmt.Sprintf("SELECT messenger_id, name, score FROM users WHERE chat_id=%d",
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT messenger_id, name, score FROM users WHERE chat_id=%d ORDER BY score DESC",
 		chatId,
 	))
 	if err != nil {
