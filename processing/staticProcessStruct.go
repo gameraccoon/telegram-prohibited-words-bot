@@ -16,12 +16,12 @@ const (
 )
 
 type StaticConfiguration struct {
-	Language    string
-	Moderators  []int64
+	DefaultLanguage    string
 	ExtendedLog bool
 }
 
 type StaticProccessStructs struct {
+	Config     *StaticConfiguration
 	Chat       chat.Chat
 	Db         *database.Database
 	Trans      i18n.TranslateFunc

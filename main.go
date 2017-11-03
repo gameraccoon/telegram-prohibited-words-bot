@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/gameraccoon/telegram-prohibited-words-bot/database"
 	"github.com/gameraccoon/telegram-prohibited-words-bot/processing"
 	"github.com/gameraccoon/telegram-prohibited-words-bot/telegramChat"
@@ -20,6 +21,15 @@ func getFileStringContent(filePath string) (content string, err error) {
 	fileContent, err := ioutil.ReadFile(filePath)
 	if err == nil {
 		content = strings.TrimSpace(string(fileContent))
+	}
+	return
+}
+
+func loadConfig(path string) (config processing.StaticConfiguration, err error) {
+	jsonString, err := getFileStringContent(path)
+	if err == nil {
+		dec := json.NewDecoder(strings.NewReader(jsonString))
+		err = dec.Decode(&config)
 	}
 	return
 }
@@ -56,7 +66,12 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	trans, err := i18n.Tfunc("ru-ru")
+	config, err := loadConfig("./config.json")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	trans, err := i18n.Tfunc(config.DefaultLanguage)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -78,9 +93,10 @@ func main() {
 
 	log.Printf("Authorized on account %s", chat.GetBotUsername())
 
-	chat.SetDebugModeEnabled(false)
+	chat.SetDebugModeEnabled(config.ExtendedLog)
 
 	staticData := &processing.StaticProccessStructs{
+		Config:      &config,
 		Chat:        chat,
 		Db:          db,
 		Trans:       trans,
