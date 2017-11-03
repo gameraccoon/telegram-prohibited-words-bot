@@ -7,4 +7,5 @@ type ProcessData struct {
 	ChatId  int64
 	UserId int64
 	UserName string
+	AllMembersAreAdmins bool
 }

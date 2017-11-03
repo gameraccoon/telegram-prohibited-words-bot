@@ -16,7 +16,22 @@ type Processors struct {
 	Main ProcessorFuncMap
 }
 
+func isSenderAnAdmin(data *processing.ProcessData) bool {
+	if data.AllMembersAreAdmins {
+		return true
+	} else if data.Static.Chat.IsUserAdmin(data.ChatId, data.UserId) {
+		return true
+	} else {
+		return false
+	}
+}
+
 func addWordCommand(data *processing.ProcessData) {
+	if !isSenderAnAdmin(data) {
+		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("no_authority"))
+		return
+	}
+
 	words := strings.Split(data.Message, ",")
 
 	for _, word := range words {
@@ -32,6 +47,11 @@ func addWordCommand(data *processing.ProcessData) {
 }
 
 func removeWordCommand(data *processing.ProcessData) {
+	if !isSenderAnAdmin(data) {
+		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("no_authority"))
+		return
+	}
+
 	words := strings.Split(data.Message, ",")
 
 	for _, word := range words {
@@ -176,9 +196,10 @@ func processPlainMessage(data *processing.ProcessData) {
 
 func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProccessStructs, processors *Processors) {
 	data := processing.ProcessData{
-		Static: staticData,
-		ChatId: update.Message.Chat.ID,
-		UserId: int64(update.Message.From.ID),
+		Static:              staticData,
+		ChatId:              update.Message.Chat.ID,
+		UserId:              int64(update.Message.From.ID),
+		AllMembersAreAdmins: update.Message.Chat.AllMembersAreAdmins,
 	}
 
 	message := update.Message.Text

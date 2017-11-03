@@ -2,6 +2,7 @@ package telegramChat
 
 import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
 )
 
 type TelegramChat struct {
@@ -38,4 +39,20 @@ func (telegramChat *TelegramChat) SendMessage(chatId int64, message string) {
 	msg := tgbotapi.NewMessage(chatId, message)
 	msg.ParseMode = "HTML"
 	telegramChat.bot.Send(msg)
+}
+
+func (telegramChat *TelegramChat) IsUserAdmin(chatId int64, userId int64) bool {
+	chatAdmins, err := telegramChat.bot.GetChatAdministrators(tgbotapi.ChatConfig{ChatID: chatId})
+	if err != nil {
+		log.Fatal(err.Error())
+		return false
+	}
+
+	for _, chatMember := range chatAdmins {
+		if int64(chatMember.User.ID) == userId {
+			return true
+		}
+	}
+
+	return false
 }
