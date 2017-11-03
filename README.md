@@ -8,7 +8,7 @@ or if you like to ban users that frequently use some specific words in your publ
 - [x] Adding and removing words
 - [x] User scores
 - [x] Different word set and scores for different chats
-- [ ] Only admins can change words list and settings
+- [x] Only admins can change words list and settings
 - [ ] Clear scores option for admins
 - [ ] Option to change bot language for admins
 - [ ] A command for admins to amnesty the last used words
