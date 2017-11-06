@@ -1,5 +1,9 @@
 package database
 
+import (
+	"log"
+)
+
 const (
 	minimalVersion = "1.0"
 	latestVersion  = "1.0"
@@ -19,9 +23,10 @@ func UpdateVersion(db *Database) {
 		for _, updater := range updaters {
 			updater.updateDb(db)
 		}
-
-		db.SetDatabaseVersion(latestVersion)
+		log.Printf("Update DB version from %s to %s", currentVersion, latestVersion)
 	}
+
+	db.SetDatabaseVersion(latestVersion)
 }
 
 func makeUpdaters(versionFrom string, versionTo string) (updaters []dbUpdater) {

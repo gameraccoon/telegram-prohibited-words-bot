@@ -127,11 +127,14 @@ func (database *Database) GetDatabaseVersion() (version string) {
 	}
 	defer rows.Close()
 
+	var safeVersion string
+
 	if rows.Next() {
-		err := rows.Scan(&version)
+		err := rows.Scan(&safeVersion)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+		version = strings.Replace(safeVersion, "_", ".", -1)
 	} else {
 		// that means it's a new clean database
 		version = latestVersion
@@ -142,7 +145,10 @@ func (database *Database) GetDatabaseVersion() (version string) {
 
 func (database *Database) SetDatabaseVersion(version string) {
 	database.execQuery("DELETE FROM global_vars WHERE name='version'")
-	database.execQuery(fmt.Sprintf("INSERT INTO global_vars (name, string_value) VALUES ('version', '%s')", sanitizeString(version)))
+
+	// because sqlite eff up with some stirngs that represent numbers with dots
+	safeVersion := strings.Replace(sanitizeString(version), ".", "_", -1)
+	database.execQuery(fmt.Sprintf("INSERT INTO global_vars (name, string_value) VALUES ('version', '%s')", safeVersion))
 }
 
 func (database *Database) AddProhibitedWord(chatId int64,word string) {

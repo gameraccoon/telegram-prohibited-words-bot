@@ -71,11 +71,11 @@ func TestDatabaseVersion(t *testing.T) {
 		assert.Equal(latestVersion, version)
 	}
 
-	db.SetDatabaseVersion("1.2")
+	db.SetDatabaseVersion("1.0")
 
 	{
 		version := db.GetDatabaseVersion()
-		assert.Equal("1.2", version)
+		assert.Equal("1.0", version)
 	}
 
 	db.SetDatabaseVersion("1.4")
