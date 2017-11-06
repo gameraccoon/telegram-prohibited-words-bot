@@ -199,7 +199,7 @@ func processUpdate(update *tgbotapi.Update, staticData *processing.StaticProcces
 		Static:              staticData,
 		ChatId:              update.Message.Chat.ID,
 		UserId:              int64(update.Message.From.ID),
-		AllMembersAreAdmins: update.Message.Chat.AllMembersAreAdmins,
+		AllMembersAreAdmins: update.Message.Chat.AllMembersAreAdmins || update.Message.Chat.IsPrivate(),
 	}
 
 	message := update.Message.Text
