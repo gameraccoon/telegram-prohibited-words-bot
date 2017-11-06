@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gameraccoon/telegram-prohibited-words-bot/processing"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
+	"strconv"
 	"strings"
 )
 
@@ -92,12 +94,30 @@ func playerScoresCommand(data *processing.ProcessData) {
 	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
 }
 
+func amnestyLastWords(data *processing.ProcessData) {
+	var buffer bytes.Buffer
+
+	count, err := strconv.Atoi(data.Message)
+	if err != nil || count < 1 {
+		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("wrong_count"))
+		return
+	}
+
+	words := data.Static.Db.RevokeLastUsedWords(data.ChatId, count)
+
+	buffer.WriteString(data.Static.Trans("amnestied_words_header"))
+	buffer.WriteString(strings.Join(words, ", "))
+
+	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
+}
+
 func makeUserCommandProcessors() ProcessorFuncMap {
 	return map[string]ProcessorFunc{
 		"add_word":    addWordCommand,
 		"remove_word": removeWordCommand,
 		"words":       listOfWordsCommand,
 		"score":       playerScoresCommand,
+		"amnesty":     amnestyLastWords,
 	}
 }
 
@@ -133,7 +153,7 @@ func getUserName(update *tgbotapi.Update) string {
 	}
 }
 
-func calcWordsCount(text string, words []string) (count int) {
+func findWords(text string, words []string) (foundWords []string) {
 	removePunctuation := func(r rune) rune {
 		if strings.ContainsRune(".,:;\"'!@#$%^&*()_+=/\\<>[]{}~", r) {
 			return -1
@@ -146,11 +166,10 @@ func calcWordsCount(text string, words []string) (count int) {
 	processingText = strings.Map(removePunctuation, processingText)
 	textWords := strings.Fields(processingText)
 
-	for _, word := range words {
-		upperWord := word
+	for _, upperWord := range words {
 		for _, textWord := range textWords {
-			if upperWord == textWord {
-				count++
+			if upperWord == strings.ToUpper(textWord) {
+				foundWords = append(foundWords, textWord)
 			}
 		}
 	}
@@ -161,8 +180,9 @@ func calcWordsCount(text string, words []string) (count int) {
 func getProhibitedWords(staticData *processing.StaticProccessStructs, chatId int64) []string {
 	if _, ok := staticData.CachedWords[chatId]; !ok {
 		words := staticData.Db.GetProhibitedWords(chatId)
+		log.Printf("prohibited words: %d (%s)", len(words), strings.Join(words, ", "))
 
-		upperWords := words
+		upperWords := []string{}
 		for _, word := range words {
 			upperWords = append(upperWords, strings.ToUpper(word))
 		}
@@ -177,20 +197,20 @@ func processPlainMessage(data *processing.ProcessData) {
 	// ToDo: cache uppercase words
 	words := getProhibitedWords(data.Static, data.ChatId)
 
-	upperText := strings.ToUpper(data.Message)
+	usedProhibitedWords := findWords(data.Message, words)
 
-	fines := calcWordsCount(upperText, words)
-
-	if fines > 0 {
+	if len(usedProhibitedWords) > 0 {
 		data.Static.Db.UpdateUser(data.ChatId, data.UserId, data.UserName)
 
-		data.Static.Db.AddUserScore(data.ChatId, data.UserId, fines)
+		data.Static.Db.AddWordsUsage(data.ChatId, data.UserId, usedProhibitedWords)
 
-		data.Static.Chat.SendMessage(data.ChatId, fmt.Sprintf("%s: %d\n%s: %d",
+		data.Static.Chat.SendMessage(data.ChatId, fmt.Sprintf("%s: %d (%s)\n%s: %d",
 			data.Static.Trans("fine_message"),
-			fines,
+			len(usedProhibitedWords),
+			strings.Join(usedProhibitedWords, ", "),
 			data.Static.Trans("total_score_message"),
-			data.Static.Db.GetUserScore(data.ChatId, data.UserId)))
+			data.Static.Db.GetUserScore(data.ChatId, data.UserId),
+		))
 	}
 }
 

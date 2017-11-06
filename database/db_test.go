@@ -209,27 +209,79 @@ func TestScoringUsers(t *testing.T) {
 
 	var userId1 int64 = 1234
 	var userId2 int64 = 4321
+	prohibitedWord := "prohibited"
 
 	db.UpdateUser(chatId, userId1, "testName1")
 	db.UpdateUser(chatId, userId2, "testName2")
+	db.AddProhibitedWord(chatId, prohibitedWord)
 
 	assert.Equal(0, db.GetUserScore(chatId, userId1))
 	assert.Equal(0, db.GetUserScore(chatId, userId2))
 
-	db.AddUserScore(chatId, userId1, 1)
-	db.AddUserScore(chatId, userId2, 5)
+	db.AddWordsUsage(chatId, userId1, []string{prohibitedWord})
+	db.AddWordsUsage(chatId, userId2, []string{prohibitedWord, prohibitedWord})
 
 	assert.Equal(1, db.GetUserScore(chatId, userId1))
-	assert.Equal(5, db.GetUserScore(chatId, userId2))
+	assert.Equal(2, db.GetUserScore(chatId, userId2))
 
 	ids, names, score := db.GetUsersList(chatId)
 
 	assert.Equal(2, len(ids))
 	if len(ids) > 1 {
 		// sorted by score DESC
-		assert.Equal(5, score[0])
+		assert.Equal(2, score[0])
 		assert.Equal("testName2", names[0])
 		assert.Equal(1, score[1])
 		assert.Equal("testName1", names[1])
 	}
+}
+
+func TestRevokingScores(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	var chatId int64 = 123
+
+	var userId1 int64 = 1234
+	var userId2 int64 = 4321
+	prohibitedWord1 := "prohibited1"
+	prohibitedWord2 := "prohibited2"
+
+	db.UpdateUser(chatId, userId1, "testName1")
+	db.UpdateUser(chatId, userId2, "testName2")
+	db.AddProhibitedWord(chatId, prohibitedWord1)
+	db.AddProhibitedWord(chatId, prohibitedWord2)
+
+	db.AddWordsUsage(chatId, userId1, []string{prohibitedWord1})
+	db.AddWordsUsage(chatId, userId2, []string{prohibitedWord1, prohibitedWord2})
+
+	{
+		words := db.RevokeLastUsedWords(chatId, 1)
+		assert.Equal(1, len(words))
+	}
+
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(1, db.GetUserScore(chatId, userId2))
+
+	{
+		words := db.RevokeLastUsedWords(chatId, 2)
+		assert.Equal(1, len(words))
+	}
+
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(0, db.GetUserScore(chatId, userId2))
+
+	{
+		words := db.RevokeLastUsedWords(chatId, 3)
+		assert.Equal(0, len(words))
+	}
+
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(0, db.GetUserScore(chatId, userId2))
 }

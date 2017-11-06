@@ -6,7 +6,7 @@ import (
 
 const (
 	minimalVersion = "1.0"
-	latestVersion  = "1.0"
+	latestVersion  = "1.1"
 )
 
 type dbUpdater struct {
@@ -52,10 +52,10 @@ func makeUpdaters(versionFrom string, versionTo string) (updaters []dbUpdater) {
 func makeAllUpdaters() (updaters []dbUpdater) {
 	updaters = []dbUpdater{
 		dbUpdater{
-			// 1.0 doesn't have version field, so you should add it manually
-			version: "1.2",
+			// 1.0 doesn't have removed field, so you should add it manually
+			version: "1.1",
 			updateDb: func(db *Database) {
-				db.execQuery("ALTER TABLE users ADD COLUMN banned")
+				db.execQuery("ALTER TABLE prohibited_words ADD COLUMN removed INTEGER")
 			},
 		},
 	}
