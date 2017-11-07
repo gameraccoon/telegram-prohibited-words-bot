@@ -1,9 +1,11 @@
 {
-  "success_message" : { "other" : "Успешно"},
-  "warn_unknown_command" : { "other" : "Неизвестная команда"},
-  "users_list_header" : { "other" : "Штрафные очки:"},
-  "fine_message" : { "other" : "Запрещенных слов"},
-  "total_score_message" : { "other" : "Всего очков"},
-  "words_list_header" : { "other" : "Запрещенные слова:"}
+  "success_message" : { "other" : "Успешно" },
+  "warn_unknown_command" : { "other" : "Неизвестная команда" },
+  "users_list_header" : { "other" : "Штрафные очки:" },
+  "fine_message" : { "other" : "Запрещенных слов" },
+  "total_score_message" : { "other" : "Всего очков" },
+  "words_list_header" : { "other" : "Запрещенные слова:" },
+  "no_authority" : { "other" : "Команда доступна только одминистраторам" },
+  "wrong_count" : { "other" : "Ошибочное количество слов" },
+  "amnestied_words_header" : { "other" : "Амнистированы последние слова:\n" }
 }
-

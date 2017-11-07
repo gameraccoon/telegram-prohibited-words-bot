@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gameraccoon/telegram-prohibited-words-bot/processing"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -95,6 +94,11 @@ func playerScoresCommand(data *processing.ProcessData) {
 }
 
 func amnestyLastWords(data *processing.ProcessData) {
+	if !isSenderAnAdmin(data) {
+		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("no_authority"))
+		return
+	}
+
 	var buffer bytes.Buffer
 
 	count, err := strconv.Atoi(data.Message)
@@ -166,10 +170,10 @@ func findWords(text string, words []string) (foundWords []string) {
 	processingText = strings.Map(removePunctuation, processingText)
 	textWords := strings.Fields(processingText)
 
-	for _, upperWord := range words {
+	for _, knownWord := range words {
 		for _, textWord := range textWords {
-			if upperWord == strings.ToUpper(textWord) {
-				foundWords = append(foundWords, textWord)
+			if strings.EqualFold(knownWord, textWord) {
+				foundWords = append(foundWords, knownWord)
 			}
 		}
 	}
@@ -178,19 +182,13 @@ func findWords(text string, words []string) (foundWords []string) {
 }
 
 func getProhibitedWords(staticData *processing.StaticProccessStructs, chatId int64) []string {
-	if _, ok := staticData.CachedWords[chatId]; !ok {
-		words := staticData.Db.GetProhibitedWords(chatId)
-		log.Printf("prohibited words: %d (%s)", len(words), strings.Join(words, ", "))
-
-		upperWords := []string{}
-		for _, word := range words {
-			upperWords = append(upperWords, strings.ToUpper(word))
-		}
-
-		staticData.CachedWords[chatId] = upperWords
+	if cachedWords, ok := staticData.CachedWords[chatId]; ok {
+		return cachedWords
+	} else {
+		cachedWords := staticData.Db.GetProhibitedWords(chatId)
+		staticData.CachedWords[chatId] = cachedWords
+		return cachedWords
 	}
-
-	return staticData.CachedWords[chatId]
 }
 
 func processPlainMessage(data *processing.ProcessData) {

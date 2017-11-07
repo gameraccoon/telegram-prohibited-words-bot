@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/stretchr/testify/require"
-	"strings"
 	"testing"
 )
 
@@ -11,25 +10,25 @@ func TestWordsCountCalculation(t *testing.T) {
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{strings.ToUpper("asd")}
+		words := []string{"asd"}
 		assert.Equal(0, len(findWords(testText, words)))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{strings.ToUpper("test")}
+		words := []string{"test"}
 		assert.Equal(1, len(findWords(testText, words)))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{strings.ToUpper("Test")}
+		words := []string{"Test"}
 		assert.Equal(1, len(findWords(testText, words)))
 	}
 
 	{
 		testText := "Tested tests test testing"
-		words := []string{strings.ToUpper("Test"), strings.ToUpper("Testing")}
+		words := []string{"Test", "Testing"}
 		assert.Equal(2, len(findWords(testText, words)))
 	}
 }
