@@ -341,7 +341,6 @@ func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (wor
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
 
 	var userId = int64(-1)
 	revokedIds := []int64{}
@@ -366,6 +365,8 @@ func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (wor
 			revokedIds = append(revokedIds, usedWordId)
 		}
 	}
+
+	rows.Close()
 
 	if len(revokedIds) > 0 {
 		database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK users SET score=score-%d WHERE messenger_id=%d AND chat_id=%d",
