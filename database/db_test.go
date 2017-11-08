@@ -270,7 +270,17 @@ func TestRevokingScores(t *testing.T) {
 	db.AddWordsUsage(chatId, userId2, []string{prohibitedWord1, prohibitedWord2})
 
 	{
-		words, userId := db.RevokeLastUsedWords(chatId, 1)
+		words, userId := db.RevokeLastUsedWords(chatId, 4, userId2)
+		assert.Equal(0, len(words))
+		assert.Equal(int64(-1), userId)
+		assert.Equal("", db.GetUserName(chatId, userId))
+	}
+
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(2, db.GetUserScore(chatId, userId2))
+
+	{
+		words, userId := db.RevokeLastUsedWords(chatId, 1, userId1)
 		assert.Equal(1, len(words))
 		assert.Equal(userName2, db.GetUserName(chatId, userId))
 	}
@@ -279,7 +289,7 @@ func TestRevokingScores(t *testing.T) {
 	assert.Equal(1, db.GetUserScore(chatId, userId2))
 
 	{
-		words, userId := db.RevokeLastUsedWords(chatId, 2)
+		words, userId := db.RevokeLastUsedWords(chatId, 4, userId1)
 		assert.Equal(1, len(words))
 		assert.Equal(userName2, db.GetUserName(chatId, userId))
 	}
@@ -288,7 +298,17 @@ func TestRevokingScores(t *testing.T) {
 	assert.Equal(0, db.GetUserScore(chatId, userId2))
 
 	{
-		words, userId := db.RevokeLastUsedWords(chatId, 3)
+		words, userId := db.RevokeLastUsedWords(chatId, 3, userId1)
+		assert.Equal(0, len(words))
+		assert.Equal(int64(-1), userId)
+		assert.Equal("", db.GetUserName(chatId, userId))
+	}
+
+	assert.Equal(1, db.GetUserScore(chatId, userId1))
+	assert.Equal(0, db.GetUserScore(chatId, userId2))
+
+	{
+		words, userId := db.RevokeLastUsedWords(chatId, 3, userId2)
 		assert.Equal(0, len(words))
 		assert.Equal(int64(-1), userId)
 		assert.Equal("", db.GetUserName(chatId, userId))

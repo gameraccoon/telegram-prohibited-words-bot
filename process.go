@@ -105,7 +105,7 @@ func amnestyLastWords(data *processing.ProcessData) {
 		return
 	}
 
-	words, userId := data.Static.Db.RevokeLastUsedWords(data.ChatId, count)
+	words, userId := data.Static.Db.RevokeLastUsedWords(data.ChatId, count, data.UserId)
 
 	if len(words) <= 0 && userId == -1 {
 		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("no_words_amnestied"))

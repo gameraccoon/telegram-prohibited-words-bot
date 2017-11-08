@@ -353,7 +353,7 @@ func (database *Database) AddWordsUsage(chatId int64, messengerUserId int64, wor
 	database.execQuery(buffer.String())
 }
 
-func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (words []string, userId int64) {
+func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int, excludedUserId int64) (words []string, userId int64) {
 	rows, err := database.conn.Query(fmt.Sprintf("SELECT u.id, p.word, u.user_id, IFNULL(u.revoked, 0) FROM used_words as u, prohibited_words as p WHERE u.chat_id=%d AND u.word_id=p.id ORDER BY u.id DESC LIMIT %d",
 		chatId,
 		wordsCount,
@@ -378,6 +378,11 @@ func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (wor
 		if userId != int64(-1) && userId != lastUserId {
 			break
 		}
+
+		if lastUserId == excludedUserId {
+			break
+		}
+
 		userId = lastUserId
 
 		if isRevoked == 0 {
