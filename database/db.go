@@ -228,6 +228,26 @@ func (database *Database) GetUsersList(chatId int64) (ids []int64, names []strin
 	return
 }
 
+func (database *Database) GetUserName(chatId int64, messengerUserId int64) (name string) {
+	rows, err := database.conn.Query(fmt.Sprintf("SELECT name FROM users WHERE chat_id=%d AND messenger_id=%d",
+		chatId,
+		messengerUserId,
+	))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err := rows.Scan(&name)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
+	return
+}
+
 func (database *Database) UpdateUser(chatId int64, messengerUserId int64, name string) {
 	sanitizedName := sanitizeString(name)
 
@@ -333,7 +353,7 @@ func (database *Database) AddWordsUsage(chatId int64, messengerUserId int64, wor
 	database.execQuery(buffer.String())
 }
 
-func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (words []string) {
+func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (words []string, userId int64) {
 	rows, err := database.conn.Query(fmt.Sprintf("SELECT u.id, p.word, u.user_id, IFNULL(u.revoked, 0) FROM used_words as u, prohibited_words as p WHERE u.chat_id=%d AND u.word_id=p.id ORDER BY u.id DESC LIMIT %d",
 		chatId,
 		wordsCount,
@@ -342,7 +362,7 @@ func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (wor
 		log.Fatal(err.Error())
 	}
 
-	var userId = int64(-1)
+	userId = int64(-1)
 	revokedIds := []int64{}
 
 	for rows.Next() {
@@ -377,6 +397,8 @@ func (database *Database) RevokeLastUsedWords(chatId int64, wordsCount int) (wor
 
 		ids_list := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(revokedIds)), ","), "[]")
 		database.execQuery(fmt.Sprintf("UPDATE OR ROLLBACK used_words SET revoked=1 WHERE id in (%s)", ids_list))
+	} else {
+		userId = -1
 	}
 
 	return

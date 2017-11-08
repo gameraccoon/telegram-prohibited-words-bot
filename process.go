@@ -99,20 +99,25 @@ func amnestyLastWords(data *processing.ProcessData) {
 		return
 	}
 
-	var buffer bytes.Buffer
-
 	count, err := strconv.Atoi(data.Message)
 	if err != nil || count < 1 {
 		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("wrong_count"))
 		return
 	}
 
-	words := data.Static.Db.RevokeLastUsedWords(data.ChatId, count)
+	words, userId := data.Static.Db.RevokeLastUsedWords(data.ChatId, count)
 
-	buffer.WriteString(data.Static.Trans("amnestied_words_header"))
-	buffer.WriteString(strings.Join(words, ", "))
+	if len(words) <= 0 && userId == -1 {
+		data.Static.Chat.SendMessage(data.ChatId, data.Static.Trans("no_words_amnestied"))
+		return
+	}
 
-	data.Static.Chat.SendMessage(data.ChatId, buffer.String())
+	data.Static.Chat.SendMessage(data.ChatId,
+		fmt.Sprintf(data.Static.Trans("amnestied_words_header"),
+			data.Static.Db.GetUserName(data.ChatId, userId),
+			strings.Join(words, ", "),
+		),
+	)
 }
 
 func makeUserCommandProcessors() ProcessorFuncMap {

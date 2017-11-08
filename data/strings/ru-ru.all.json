@@ -7,5 +7,6 @@
   "words_list_header" : { "other" : "Запрещенные слова:" },
   "no_authority" : { "other" : "Команда доступна только администраторам" },
   "wrong_count" : { "other" : "Ошибочное количество слов" },
-  "amnestied_words_header" : { "other" : "Амнистированы последние слова:\n" }
+  "amnestied_words_header" : { "other" : "Амнистия пользователю %s, слова:\n%s" },
+  "no_words_amnestied" : { "other" : "Ошибка при применении амнистии" }
 }
